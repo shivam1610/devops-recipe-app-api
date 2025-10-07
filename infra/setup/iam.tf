@@ -168,14 +168,19 @@ data "aws_iam_policy_document" "rds" {
   statement {
     effect = "Allow"
     actions = [
-      "rds:DescribeDBSubnetGroups",
-      "rds:DescribeDBInstances",
-      "rds:CreateDBSubnetGroup",
-      "rds:DeleteDBSubnetGroup",
       "rds:CreateDBInstance",
       "rds:DeleteDBInstance",
+      "rds:DescribeDBInstances",
+      "rds:ModifyDBInstance",
+      "rds:CreateDBSubnetGroup",
+      "rds:DeleteDBSubnetGroup",
+      "rds:DescribeDBSubnetGroups",
+      "rds:AddTagsToResource",
       "rds:ListTagsForResource",
-      "rds:ModifyDBInstance"
+      "rds:CreateDBParameterGroup",
+      "rds:ModifyDBParameterGroup",
+      "rds:DescribeDBParameterGroups",
+      "rds:DescribeDBParameters"
     ]
     resources = ["*"]
   }
