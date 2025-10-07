@@ -168,19 +168,15 @@ data "aws_iam_policy_document" "rds" {
   statement {
     effect = "Allow"
     actions = [
-      "rds:CreateDBInstance",
-      "rds:DeleteDBInstance",
+      "rds:DescribeDBSubnetGroups",
       "rds:DescribeDBInstances",
-      "rds:ModifyDBInstance",
       "rds:CreateDBSubnetGroup",
       "rds:DeleteDBSubnetGroup",
-      "rds:DescribeDBSubnetGroups",
-      "rds:AddTagsToResource",
+      "rds:CreateDBInstance",
+      "rds:DeleteDBInstance",
       "rds:ListTagsForResource",
-      "rds:CreateDBParameterGroup",
-      "rds:ModifyDBParameterGroup",
-      "rds:DescribeDBParameterGroups",
-      "rds:DescribeDBParameters"
+      "rds:AddTagsToResource",        # 👈 Missing permission
+      "rds:ModifyDBInstance"
     ]
     resources = ["*"]
   }
