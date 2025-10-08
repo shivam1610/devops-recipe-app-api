@@ -49,8 +49,8 @@ jobs:
           TF_VAR_ecr_app_image: ${{ vars.ECR_REPO_APP }}:${{ github.sha }}
           TF_VAR_ecr_proxy_image: ${{ vars.ECR_REPO_PROXY }}:${{ github.sha }}
         run: |
-          export TF_VAR_ecr_app_image="${{ vars.ECR_REPO_APP }}:$GITHUB_SHA"
-          export TF_VAR_ecr_proxy_image="${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA"
+          # export TF_VAR_ecr_app_image="${{ vars.ECR_REPO_APP }}:$GITHUB_SHA"
+          # export TF_VAR_ecr_proxy_image="${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA"
           workspace=$(cat .workspace)
           cd infra/
           COMMON_ENV="-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
