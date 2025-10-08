@@ -52,35 +52,15 @@ jobs:
           export TF_VAR_ecr_proxy_image="${{ vars.ECR_REPO_PROXY }}:$GITHUB_SHA"
           workspace=$(cat .workspace)
           cd infra/
-          docker compose run --rm \
-            -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
-            -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-            -e AWS_DEFAULT_REGION=ap-south-1 \
-            -e TF_WORKSPACE=${workspace} \
-            -e TF_VAR_db_password=${TF_VAR_db_password} \
-            -e TF_VAR_django_secret_key=${TF_VAR_django_secret_key} \
-            -e TF_VAR_ecr_app_image=${TF_VAR_ecr_app_image} \
-            -e TF_VAR_ecr_proxy_image=${TF_VAR_ecr_proxy_image} \
-            terraform -chdir=deploy/ init
+          COMMON_ENV="-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+          -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
+          -e AWS_DEFAULT_REGION=ap-south-1 \
+          -e TF_WORKSPACE=${workspace} \
+          -e TF_VAR_db_password=${TF_VAR_db_password} \
+          -e TF_VAR_django_secret_key=${TF_VAR_django_secret_key} \
+          -e TF_VAR_ecr_app_image=${TF_VAR_ecr_app_image} \
+          -e TF_VAR_ecr_proxy_image=${TF_VAR_ecr_proxy_image}"
               
-          docker compose run --rm \
-            -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
-            -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-            -e AWS_DEFAULT_REGION=ap-south-1 \
-            -e TF_WORKSPACE=${workspace} \
-            -e TF_VAR_db_password=${TF_VAR_db_password} \
-            -e TF_VAR_django_secret_key=${TF_VAR_django_secret_key} \
-            -e TF_VAR_ecr_app_image=${TF_VAR_ecr_app_image} \
-            -e TF_VAR_ecr_proxy_image=${TF_VAR_ecr_proxy_image} \
-            terraform -chdir=deploy/ workspace select -or-create ${workspace}
-              
-          docker compose run --rm \
-            -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
-            -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
-            -e AWS_DEFAULT_REGION=ap-south-1 \
-            -e TF_WORKSPACE=${workspace} \
-            -e TF_VAR_db_password=${TF_VAR_db_password} \
-            -e TF_VAR_django_secret_key=${TF_VAR_django_secret_key} \
-            -e TF_VAR_ecr_app_image=${TF_VAR_ecr_app_image} \
-            -e TF_VAR_ecr_proxy_image=${TF_VAR_ecr_proxy_image} \
-            terraform -chdir=deploy/ apply -auto-approve
+          docker compose run --rm $COMMON_ENV terraform -chdir=deploy/ init
+          docker compose run --rm $COMMON_ENV terraform -chdir=deploy/ workspace select -or-create ${workspace}
+          docker compose run --rm $COMMON_ENV terraform -chdir=deploy/ apply -auto-approve
