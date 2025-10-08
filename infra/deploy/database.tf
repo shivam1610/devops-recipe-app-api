@@ -39,7 +39,7 @@ resource "aws_db_instance" "main" {
   engine                     = "postgres"
   engine_version             = "15.3"
   auto_minor_version_upgrade = true
-  instance_class             = "db.t4.micro"
+  instance_class             = "db.t4g.micro"
   username                   = var.db_username
   password                   = var.db_password
   skip_final_snapshot        = true
