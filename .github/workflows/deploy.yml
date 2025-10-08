@@ -43,6 +43,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-south-1
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
           TF_VAR_django_secret_key: ${{ secrets.TF_VAR_DJANGO_SECRET_KEY }}
           TF_VAR_ecr_app_image: ${{ vars.ECR_REPO_APP }}:${{ github.sha }}
@@ -60,7 +61,7 @@ jobs:
           -e TF_VAR_django_secret_key=${TF_VAR_django_secret_key} \
           -e TF_VAR_ecr_app_image=${TF_VAR_ecr_app_image} \
           -e TF_VAR_ecr_proxy_image=${TF_VAR_ecr_proxy_image}"
-              
+
           docker compose run --rm $COMMON_ENV terraform -chdir=deploy/ init
           docker compose run --rm $COMMON_ENV terraform -chdir=deploy/ workspace select -or-create ${workspace}
           docker compose run --rm $COMMON_ENV terraform -chdir=deploy/ apply -auto-approve
