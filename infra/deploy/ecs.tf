@@ -45,7 +45,7 @@ resource "aws_ecs_cluster" "main" {
 }
 
 
-resource "aws_ecs_task_defination" "api" {
+resource "aws_ecs_task_definition" "api" {
   # Task definition details would go here
   family = "${local.prefix}-api"
   requires_compatibilities = ["FARGATE"]
@@ -55,7 +55,90 @@ resource "aws_ecs_task_defination" "api" {
   execution_role_arn = aws_iam_role.task_execution_role.arn
   task_role_arn      = aws_iam_role.app_task.arn
 
-  container_definations = jsonencode([])
+  container_definitions = jsonencode([
+    {
+      name      = "api"
+      image     = var.ecr_app_image
+      essential = true
+      memoryReservation = 256
+      user = "django-user"
+      environment = [
+        {
+          name = "DJANGO_SECRET_KEY"
+          value = var.django_secret_key
+        },
+        {
+          name = "DB_HOST"
+          value = aws_db_instance.main.address
+        },
+        {
+          name = "DB_NAME"
+          value = aws_db_instance.main.db_name
+        },
+        {
+          name = "DB_USER"
+          value = aws_db_instance.main.username
+        },
+        {
+          name = "DB_PASS"
+          value = aws_db_instance.main.password
+        },
+        {
+          name = "ALLOWED_HOSTS"
+          value = "*"
+        }
+      ]
+      mountPoints = [
+        {
+          sourceVolume  = "static"
+          containerPath = "/vol/web/static"
+          readOnly      = false
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_task_logs.name
+          "awslogs-region"        = data.aws_region.current.name
+          "awslogs-stream-prefix" = "api"
+        }
+      }
+    },
+    {
+      name      = "proxy"
+      image     = var.ecr_proxy_image
+      essential = true
+      memoryReservation = 256
+      user = "nginx"
+      portMappings = [
+        {
+          containerPort = 80
+          hostPort      = 8000
+        }
+      ]
+      environment = [
+        {
+          name = "APP_HOST"
+          value = "127.0.0.1"
+        }
+      ]
+      mountPoints = [
+        {
+          sourceVolume  = "static"
+          containerPath = "/vol/static"
+          readOnly      = true
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_task_logs.name
+          "awslogs-region"        = data.aws_region.current.name
+          "awslogs-stream-prefix" = "proxy"
+        }
+      }
+    }
+  ])
 
   volume {
     name = "static"
