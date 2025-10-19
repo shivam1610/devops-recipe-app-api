@@ -45,17 +45,100 @@ resource "aws_ecs_cluster" "main" {
 }
 
 
-resource "aws_ecs_task_defination" "api" {
+resource "aws_ecs_task_definition" "api" {
   # Task definition details would go here
-  family = "${local.prefix}-api"
+  family                   = "${local.prefix}-api"
   requires_compatibilities = ["FARGATE"]
-  network_mode = "awsvpc"
-  cpu    = 256
-  memory = 512
-  execution_role_arn = aws_iam_role.task_execution_role.arn
-  task_role_arn      = aws_iam_role.app_task.arn
+  network_mode             = "awsvpc"
+  cpu                      = 256
+  memory                   = 512
+  execution_role_arn       = aws_iam_role.task_execution_role.arn
+  task_role_arn            = aws_iam_role.app_task.arn
 
-  container_definations = jsonencode([])
+  container_definitions = jsonencode([
+    {
+      name              = "api"
+      image             = var.ecr_app_image
+      essential         = true
+      memoryReservation = 256
+      user              = "django-user"
+      environment = [
+        {
+          name  = "DJANGO_SECRET_KEY"
+          value = var.django_secret_key
+        },
+        {
+          name  = "DB_HOST"
+          value = aws_db_instance.main.address
+        },
+        {
+          name  = "DB_NAME"
+          value = aws_db_instance.main.db_name
+        },
+        {
+          name  = "DB_USER"
+          value = aws_db_instance.main.username
+        },
+        {
+          name  = "DB_PASS"
+          value = aws_db_instance.main.password
+        },
+        {
+          name  = "ALLOWED_HOSTS"
+          value = "*"
+        }
+      ]
+      mountPoints = [
+        {
+          sourceVolume  = "static"
+          containerPath = "/vol/web/static"
+          readOnly      = false
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_task_logs.name
+          "awslogs-region"        = data.aws_region.current.name
+          "awslogs-stream-prefix" = "api"
+        }
+      }
+    },
+    {
+      name              = "proxy"
+      image             = var.ecr_proxy_image
+      essential         = true
+      memoryReservation = 256
+      user              = "nginx"
+      portMappings = [
+        {
+          containerPort = 80
+          hostPort      = 8000
+        }
+      ]
+      environment = [
+        {
+          name  = "APP_HOST"
+          value = "127.0.0.1"
+        }
+      ]
+      mountPoints = [
+        {
+          sourceVolume  = "static"
+          containerPath = "/vol/static"
+          readOnly      = true
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_task_logs.name
+          "awslogs-region"        = data.aws_region.current.name
+          "awslogs-stream-prefix" = "proxy"
+        }
+      }
+    }
+  ])
 
   volume {
     name = "static"
@@ -65,4 +148,55 @@ resource "aws_ecs_task_defination" "api" {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
   }
+}
+
+resource "aws_security_group" "ecs_service" {
+  name        = "${local.prefix}-ecs-service"
+  description = "Access rules for the ECS service"
+  vpc_id      = aws_vpc.main.id
+
+  #Outbound access to endpoints
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  #RDS connectivity
+  egress {
+    from_port = 5432
+    to_port   = 5432
+    protocol  = "tcp"
+    cidr_blocks = [
+      aws_subnet.private_a.cidr_block,
+      aws_subnet.private_b.cidr_block
+    ]
+  }
+
+  #Http inbound access
+  ingress {
+    from_port   = 8000
+    to_port     = 8000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+}
+
+resource "aws_ecs_service" "api" {
+  name                   = "${local.prefix}-api"
+  cluster                = aws_ecs_cluster.main.name
+  task_definition        = aws_ecs_task_definition.api.family
+  desired_count          = 1
+  launch_type            = "FARGATE"
+  platform_version       = "1.4.0"
+  enable_execute_command = true
+
+  network_configuration {
+    subnets          = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+    security_groups  = [aws_security_group.ecs_service.id]
+    assign_public_ip = true
+  }
+
 }
