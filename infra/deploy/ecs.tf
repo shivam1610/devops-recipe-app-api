@@ -112,7 +112,7 @@ resource "aws_ecs_task_definition" "api" {
       user              = "nginx"
       portMappings = [
         {
-          containerPort = 80
+          containerPort = 8000
           hostPort      = 8000
         }
       ]
